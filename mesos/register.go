@@ -170,8 +170,8 @@ func (m *Mesos) registerTask(t *state.Task, agent string) {
 		}
 		if discoveryPort.Name != "" {
 			m.Registry.Register(&registry.Service{
-        ID:      fmt.Sprintf("%s:%s:%s:%s:%d:%s", m.ServiceIdPrefix, agent, svcName, address, discoveryPort.Number, discoveryPort.Name),
-				Name:    svcName,
+				ID:      fmt.Sprintf("%s:%s:%s:%s:%d", m.ServiceIdPrefix, agent, tname, address, discoveryPort.Number),
+				Name:    tname,
 				Port:    toPort(servicePort),
 				Address: address,
 				Tags:    append(append(tags, serviceName), porttags...),
@@ -201,8 +201,8 @@ func (m *Mesos) registerTask(t *state.Task, agent string) {
 				svcName = fmt.Sprintf("%s-port%d", svcName, key+1)
 			}
 			m.Registry.Register(&registry.Service{
-				ID:      fmt.Sprintf("%s:%s:%s:%s:%s", m.ServiceIdPrefix, agent, svcName, address, port),
-				Name:    svcName,
+				ID:      fmt.Sprintf("%s:%s:%s:%s:%s", m.ServiceIdPrefix, agent, tname, address, port),
+				Name:    tname,
 				Port:    toPort(port),
 				Address: address,
 				Tags:    tags,
