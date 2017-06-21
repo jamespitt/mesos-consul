@@ -54,7 +54,13 @@ func (c *Consul) newAgent(address string) *consulapi.Client {
 
 	config := consulapi.DefaultConfig()
 
-	config.Address = fmt.Sprintf("%s:%s", address, c.config.port)
+	ip := address
+
+	if c.config.ip != "" {
+		ip  = c.config.ip
+	}
+
+	config.Address = fmt.Sprintf("%s:%s",ip , c.config.port)
 	log.Debugf("consul address: %s", config.Address)
 
 	config.HttpClient.Timeout = time.Duration(c.config.timeout) * time.Second
