@@ -18,13 +18,7 @@ imports:
   subpackages:
   - coordinate
 - name: github.com/mesos/mesos-go
-  version: 7228b13084ce3ea645dbf7c8ecb5704301a6eadf
-  subpackages:
-  - detector
-  - detector/zoo
-  - mesosproto
-  - mesosutil
-  - upid
+  version: fe43f9c76d1d24530cc0e024170f7ea8ebc0a29f
 - name: github.com/ogier/pflag
   version: 45c278ab3607870051a2ea9040bb85fcb8557481
 - name: github.com/samuel/go-zookeeper
