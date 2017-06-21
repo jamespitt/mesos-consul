@@ -170,7 +170,7 @@ func (m *Mesos) registerTask(t *state.Task, agent string) {
 		}
 		if discoveryPort.Name != "" {
 			m.Registry.Register(&registry.Service{
-				ID:      fmt.Sprintf("%s:%s:%s:%s:%d", m.ServiceIdPrefix, agent, svcName, address, discoveryPort.Number),
+        ID:      fmt.Sprintf("%s:%s:%s:%s:%d:%s", m.ServiceIdPrefix, agent, svcName, address, discoveryPort.Number, discoveryPort.Name),
 				Name:    svcName,
 				Port:    toPort(servicePort),
 				Address: address,
