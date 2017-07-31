@@ -31,8 +31,5 @@ imports:
   version: b4690f45fa1cafc47b1c280c2e75116efe40cc13
   subpackages:
   - context
-- name: golang.org/x/sys
-  version: 30237cf4eefd639b184d1f2cb77a581ea0be8947
-  subpackages:
-  - unix
+- name: golang.org/x/sys/unix
 testImports: []
