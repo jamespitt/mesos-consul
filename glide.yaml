@@ -1,4 +1,4 @@
-package: github.com/mantl/mesos-consul
+package: github.com/jamespitt/mesos-consul
 import:
 - package: github.com/hashicorp/consul
   subpackages:

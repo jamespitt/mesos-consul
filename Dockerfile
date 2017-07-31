@@ -2,9 +2,9 @@ FROM golang:1.7.5-alpine3.5
 
 MAINTAINER Chris Aubuchon <Chris.Aubuchon@gmail.com>
 
-COPY . /go/src/github.com/mantl/mesos-consul
+COPY . /go/src/github.com/jamespitt/mesos-consul
 RUN apk add --update make git glide \
-	&& cd /go/src/github.com/mantl/mesos-consul \
+	&& cd /go/src/github.com/jamespitt/mesos-consul \
 	&& make vendor \
 	&& go build -o /bin/mesos-consul \
 	&& rm -rf /go \
