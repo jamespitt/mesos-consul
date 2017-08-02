@@ -81,14 +81,17 @@ func (m *Mesos) RegisterHosts(s state.State) {
 func (m *Mesos) registerHost(s *registry.Service) {
 	h := m.Registry.CacheLookup(s.ID)
 	if h != nil {
+
+    if (h.ID == s.ID) {
+      if sliceEq(s.Tags, h.Tags) {
+        m.Registry.CacheMark(s.ID)
+        // Tags are the same. Return
+        return
+      }
+    }
+
 		log.Infof("Host found. Comparing tags: (%v, %v)", h.Tags, s.Tags)
-
-		if sliceEq(s.Tags, h.Tags) {
-			m.Registry.CacheMark(s.ID)
-
-			// Tags are the same. Return
-			return
-		}
+		log.Infof("Host ID: (%v, %v)", h.ID, s.ID)
 
 		log.Info("Tags changed. Re-registering")
 

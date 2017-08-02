@@ -19,17 +19,15 @@ imports:
   - coordinate
 - name: github.com/mesos/mesos-go
   version: fe43f9c76d1d24530cc0e024170f7ea8ebc0a29f
-- name: github.com/ogier/pflag
-  version: 45c278ab3607870051a2ea9040bb85fcb8557481
 - name: github.com/samuel/go-zookeeper
   version: 1d7be4effb13d2d908342d349d71a284a7542693
   subpackages:
   - zk
-- name: github.com/sirupsen/logrus
-  version: 7f4b1adc791766938c29457bed0703fb9134421a
 - name: golang.org/x/net
   version: b4690f45fa1cafc47b1c280c2e75116efe40cc13
   subpackages:
   - context
 - name: golang.org/x/sys/unix
+- name: github.com/ogier/pflag
+- name: github.com/sirupsen/logrus
 testImports: []
