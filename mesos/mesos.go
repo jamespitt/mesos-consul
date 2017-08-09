@@ -152,9 +152,9 @@ func (m *Mesos) loadState() (state.State, error) {
 		return sj, errors.New("No master in zookeeper")
 	}
 
-	log.Infof("Zookeeper leader: %s:%s", mh.Ip, mh.PortString)
+	log.Debugf("Zookeeper leader: %s:%s", mh.Ip, mh.PortString)
 
-	log.Info("reloading from master ", mh.Ip)
+	log.Debugf("reloading from master ", mh.Ip)
 	sj, err = m.loadFromMaster(mh.Ip, mh.PortString)
 
 	if rip := leaderIP(sj.Leader); rip != mh.Ip {
@@ -192,7 +192,7 @@ func (m *Mesos) loadFromMaster(ip string, port string) (sj state.State, err erro
 }
 
 func (m *Mesos) parseState(sj state.State) {
-	log.Info("Running parseState")
+	log.Debug("Running parseState")
 
 	m.RegisterHosts(sj)
 	log.Debug("Done running RegisterHosts")

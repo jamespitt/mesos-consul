@@ -18,7 +18,7 @@ import (
 // with service-id-prefix flag, followed by a colon.
 //
 func (m *Mesos) LoadCache() error {
-	log.Debug("Populating cache from Consul")
+	log.Info("Populating cache from Consul")
 
 	mh := m.getLeader()
 
@@ -93,7 +93,7 @@ func (m *Mesos) registerHost(s *registry.Service) {
 		log.Infof("Host found. Comparing tags: (%v, %v)", h.Tags, s.Tags)
 		log.Infof("Host ID: (%v, %v)", h.ID, s.ID)
 
-		log.Info("Tags changed. Re-registering")
+		log.Infof("Tags changed. Re-registering")
 
 		// Delete cache entry. It will be re-created below
 		m.Registry.CacheDelete(s.ID)
@@ -111,7 +111,7 @@ func (m *Mesos) registerTask(t *state.Task, agent string) {
 	log.Debugf("original TaskName : (%v)", tname)
 	if t.Label("overrideTaskName") != "" {
 		tname = cleanName(t.Label("overrideTaskName"), m.Separator)
-		log.Debugf("overrideTaskName to : (%v)", tname)
+		log.Debug("overrideTaskName to : (%v)", tname)
 	}
 	if !m.TaskPrivilege.Allowed(tname) {
 		// Task not allowed to be registered
