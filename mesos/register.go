@@ -90,10 +90,9 @@ func (m *Mesos) registerHost(s *registry.Service) {
       }
     }
 
-		log.Infof("Host found. Comparing tags: (%v, %v)", h.Tags, s.Tags)
-		log.Infof("Host ID: (%v, %v)", h.ID, s.ID)
-
-		log.Infof("Tags changed. Re-registering")
+		log.Debugf("Host found. Comparing tags: (%v, %v)", h.Tags, s.Tags)
+		log.Debugf("Host ID: (%v, %v)", h.ID, s.ID)
+		log.Debugf("Tags changed. Re-registering")
 
 		// Delete cache entry. It will be re-created below
 		m.Registry.CacheDelete(s.ID)
