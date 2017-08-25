@@ -42,51 +42,51 @@ type Mesos struct {
 	ServicePortLabel string
 }
 
-func New(c *config.Config) *Mesos {
-	m := new(Mesos)
+func New(config *config.Config) *Mesos {
+	mesos := new(Mesos)
 
-	if c.Zk == "" {
+	if config.Zk == "" {
 		return nil
 	}
-	m.Separator = c.Separator
+	mesos.Separator = config.Separator
 
-	m.TaskPrivilege = NewPrivilege(c.TaskWhiteList, c.TaskBlackList)
-	m.FwPrivilege = NewPrivilege(c.FwWhiteList, c.FwBlackList)
+	mesos.TaskPrivilege = NewPrivilege(config.TaskWhiteList, config.TaskBlackList)
+	mesos.FwPrivilege = NewPrivilege(config.FwWhiteList, config.FwBlackList)
 
 	var err error
-	m.taskTag, err = buildTaskTag(c.TaskTag)
+	mesos.taskTag, err = buildTaskTag(config.TaskTag)
 	if err != nil {
-		log.WithField("task-tag", c.TaskTag).Fatal(err.Error())
+		log.WithField("task-tag", config.TaskTag).Fatal(err.Error())
 	}
 
-	m.ServiceName = cleanName(c.ServiceName, c.Separator)
+	mesos.ServiceName = cleanName(config.ServiceName, config.Separator)
 
-	m.Registry = consul.New()
+	mesos.Registry = consul.New()
 
-	if m.Registry == nil {
+	if mesos.Registry == nil {
 		log.Fatal("No registry specified")
 	}
 
-	m.zkDetector(c.Zk)
+	mesos.zkDetector(config.Zk)
 
-	m.IpOrder = strings.Split(c.MesosIpOrder, ",")
-	for _, src := range m.IpOrder {
+	mesos.IpOrder = strings.Split(config.MesosIpOrder, ",")
+	for _, src := range mesos.IpOrder {
 		switch src {
 		case "netinfo", "host", "docker", "mesos":
 		default:
 			log.Fatalf("Invalid IP Search Order: '%v'", src)
 		}
 	}
-	log.Debugf("m.IpOrder = '%v'", m.IpOrder)
+	log.Debugf("mesos.IpOrder = '%v'", mesos.IpOrder)
 
-	if c.ServiceTags != "" {
-		m.ServiceTags = strings.Split(c.ServiceTags, ",")
+	if config.ServiceTags != "" {
+		mesos.ServiceTags = strings.Split(config.ServiceTags, ",")
 	}
 
-	m.ServiceIdPrefix = c.ServiceIdPrefix
-	m.ServicePortLabel = c.ServicePortLabel
+	mesos.ServiceIdPrefix = config.ServiceIdPrefix
+	mesos.ServicePortLabel = config.ServicePortLabel
 
-	return m
+	return mesos
 }
 
 // buildTaskTag takes a slice of task-tag arguments from the command line
@@ -114,29 +114,29 @@ func buildTaskTag(taskTag []string) (map[string][]string, error) {
 	return result, nil
 }
 
-func (m *Mesos) Refresh() error {
-	sj, err := m.loadState()
+func (mesos *Mesos) Refresh() error {
+	state, err := mesos.loadState()
 	if err != nil {
-		log.Warn("loadState failed: ", err.Error())
+		log.Warn("state failed: ", err.Error())
 		return err
 	}
 
-	if sj.Leader == "" {
+	if state.Leader == "" {
 		return errors.New("Empty master")
 	}
 
-	if m.Registry.CacheCreate() {
-		m.LoadCache()
+	if mesos.Registry.CacheCreate() {
+		mesos.LoadCache()
 	}
 
-	m.parseState(sj)
+	mesos.parseState(state)
 
 	return nil
 }
 
-func (m *Mesos) loadState() (state.State, error) {
+func (mesos *Mesos) loadState() (state.State, error) {
 	var err error
-	var sj state.State
+	var state state.State
 
 	log.Debug("loadState() called")
 
@@ -146,26 +146,26 @@ func (m *Mesos) loadState() (state.State, error) {
 		}
 	}()
 
-	mh := m.getLeader()
+	mh := mesos.getLeader()
 	if mh.Ip == "" {
 		log.Warn("No master in zookeeper")
-		return sj, errors.New("No master in zookeeper")
+		return state, errors.New("No master in zookeeper")
 	}
 
 	log.Debugf("Zookeeper leader: %s:%s", mh.Ip, mh.PortString)
 
 	log.Debugf("reloading from master ", mh.Ip)
-	sj, err = m.loadFromMaster(mh.Ip, mh.PortString)
+	state, err = mesos.loadFromMaster(mh.Ip, mh.PortString)
 
-	if rip := leaderIP(sj.Leader); rip != mh.Ip {
+	if rip := leaderIP(state.Leader); rip != mh.Ip {
 		log.Warn("master changed to ", rip)
-		sj, err = m.loadFromMaster(rip, mh.PortString)
+		state, err = mesos.loadFromMaster(rip, mh.PortString)
 	}
 
-	return sj, err
+	return state, err
 }
 
-func (m *Mesos) loadFromMaster(ip string, port string) (sj state.State, err error) {
+func (mesos *Mesos) loadFromMaster(ip string, port string) (state state.State, err error) {
 	url := "http://" + ip + ":" + port + "/master/state.json"
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -183,32 +183,32 @@ func (m *Mesos) loadFromMaster(ip string, port string) (sj state.State, err erro
 		return
 	}
 
-	err = json.Unmarshal(body, &sj)
+	err = json.Unmarshal(body, &state)
 	if err != nil {
 		return
 	}
 
-	return sj, nil
+	return state, nil
 }
 
-func (m *Mesos) parseState(sj state.State) {
+func (mesos *Mesos) parseState(state state.State) {
 	log.Debug("Running parseState")
 
-	m.RegisterHosts(sj)
+	mesos.RegisterHosts(state)
 	log.Debug("Done running RegisterHosts")
 
-	for _, fw := range sj.Frameworks {
-		if !m.FwPrivilege.Allowed(fw.Name) {
+	for _, framework:= range state.Frameworks {
+		if !mesos.FwPrivilege.Allowed(framework.Name) {
 			continue
 		}
-		for _, task := range fw.Tasks {
-			agent, ok := m.Agents[task.SlaveID]
+		for _, task := range framework.Tasks {
+			agent, ok := mesos.Agents[task.SlaveID]
 			if ok && task.State == "TASK_RUNNING" {
 				task.SlaveIP = agent
-				m.registerTask(&task, agent)
+				mesos.registerTask(&task, agent)
 			}
 		}
 	}
 
-	m.Registry.Deregister()
+	mesos.Registry.Deregister()
 }

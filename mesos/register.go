@@ -7,7 +7,6 @@ import (
 
 	"github.com/jamespitt/mesos-consul/registry"
 	"github.com/jamespitt/mesos-consul/state"
-
 	log "github.com/sirupsen/logrus"
 )
 
@@ -17,33 +16,33 @@ import (
 // All services created by mesos-consul are prefixed
 // with service-id-prefix flag, followed by a colon.
 //
-func (m *Mesos) LoadCache() error {
+func (mesos *Mesos) LoadCache() error {
 	log.Info("Populating cache from Consul")
 
-	mh := m.getLeader()
+	mh := mesos.getLeader()
 
-	return m.Registry.CacheLoad(mh.Ip, m.ServiceIdPrefix)
+	return mesos.Registry.CacheLoad(mh.Ip, mesos.ServiceIdPrefix)
 }
 
-func (m *Mesos) RegisterHosts(s state.State) {
+func (mesos *Mesos) RegisterHosts(s state.State) {
 	log.Debug("Running RegisterHosts")
 
-	m.Agents = make(map[string]string)
+	mesos.Agents = make(map[string]string)
 
 	// Register slaves
 	for _, f := range s.Slaves {
 		agent := toIP(f.PID.Host)
 		port := toPort(f.PID.Port)
 
-		m.Agents[f.ID] = agent
+		mesos.Agents[f.ID] = agent
 
-		m.registerHost(&registry.Service{
-			ID:      fmt.Sprintf("%s:%s:%s:%s", m.ServiceIdPrefix, m.ServiceName, f.ID, f.Hostname),
-			Name:    m.ServiceName,
+		mesos.registerHost(&registry.Service{
+			ID:      fmt.Sprintf("%s:%s:%s:%s", mesos.ServiceIdPrefix, mesos.ServiceName, f.ID, f.Hostname),
+			Name:    mesos.ServiceName,
 			Port:    port,
 			Address: agent,
 			Agent:   agent,
-			Tags:    m.agentTags("agent", "follower"),
+			Tags:    mesos.agentTags("agent", "follower"),
 			Check: &registry.Check{
 				HTTP:     fmt.Sprintf("http://%s:%d/slave(1)/health", agent, port),
 				Interval: "10s",
@@ -52,18 +51,18 @@ func (m *Mesos) RegisterHosts(s state.State) {
 	}
 
 	// Register masters
-	mas := m.getMasters()
+	mas := mesos.getMasters()
 	for _, ma := range mas {
 		var tags []string
 
 		if ma.IsLeader {
-			tags = m.agentTags("leader", "master")
+			tags = mesos.agentTags("leader", "master")
 		} else {
-			tags = m.agentTags("master")
+			tags = mesos.agentTags("master")
 		}
 		s := &registry.Service{
-			ID:      fmt.Sprintf("%s:%s:%s:%s", m.ServiceIdPrefix, m.ServiceName, ma.Ip, ma.PortString),
-			Name:    m.ServiceName,
+			ID:      fmt.Sprintf("%s:%s:%s:%s", mesos.ServiceIdPrefix, mesos.ServiceName, ma.Ip, ma.PortString),
+			Name:    mesos.ServiceName,
 			Port:    ma.Port,
 			Address: ma.Ip,
 			Agent:   ma.Ip,
@@ -74,60 +73,59 @@ func (m *Mesos) RegisterHosts(s state.State) {
 			},
 		}
 
-		m.registerHost(s)
+		mesos.registerHost(s)
 	}
 }
 
-func (m *Mesos) registerHost(s *registry.Service) {
-	h := m.Registry.CacheLookup(s.ID)
+func (mesos *Mesos) registerHost(s *registry.Service) {
+	h := mesos.Registry.CacheLookup(s.ID)
 	if h != nil {
-
-    if (h.ID == s.ID) {
-      if sliceEq(s.Tags, h.Tags) {
-        m.Registry.CacheMark(s.ID)
-        // Tags are the same. Return
-        return
-      }
-    }
+		if (h.ID == s.ID) {
+		  if sliceEq(s.Tags, h.Tags) {
+			mesos.Registry.CacheMark(s.ID)
+			// Tags are the same. Return
+			return
+		  }
+		}
 
 		log.Debugf("Host found. Comparing tags: (%v, %v)", h.Tags, s.Tags)
 		log.Debugf("Host ID: (%v, %v)", h.ID, s.ID)
 		log.Debugf("Tags changed. Re-registering")
 
 		// Delete cache entry. It will be re-created below
-		m.Registry.CacheDelete(s.ID)
+		mesos.Registry.CacheDelete(s.ID)
 	}
 
-	m.Registry.Register(s)
+	mesos.Registry.Register(s)
 }
 
-func (m *Mesos) registerTask(t *state.Task, agent string) {
+func (mesos *Mesos) registerTask(task *state.Task, agent string) {
 	var tags []string
 
 	registered := false
 
-	tname := cleanName(t.Name, m.Separator)
-	log.Debugf("original TaskName : (%v)", tname)
-	if t.Label("overrideTaskName") != "" {
-		tname = cleanName(t.Label("overrideTaskName"), m.Separator)
-		log.Debug("overrideTaskName to : (%v)", tname)
+	taskName := cleanName(task.Name, mesos.Separator)
+	log.Debugf("original TaskName : (%v)", taskName)
+	if task.Label("overrideTaskName") != "" {
+		taskName = cleanName(task.Label("overrideTaskName"), mesos.Separator)
+		log.Debug("overrideTaskName to : (%v)", taskName)
 	}
-	if !m.TaskPrivilege.Allowed(tname) {
+	if !mesos.TaskPrivilege.Allowed(taskName) {
 		// Task not allowed to be registered
 		return
 	}
 
-	address := t.IP(m.IpOrder...)
+	address := task.IP(mesos.IpOrder...)
 
 	// build a map to indicate public ports
 	var registerPorts map[int]struct{}
-	if m.ServicePortLabel != "" {
-		p := t.Label(m.ServicePortLabel)
-		if p != "" {
-			ps := strings.Split(p, ",")
-			if len(ps) > 0 {
+	if mesos.ServicePortLabel != "" {
+		servicePortLabel := task.Label(mesos.ServicePortLabel)
+		if servicePortLabel != "" {
+			servicePortLabelArray := strings.Split(servicePortLabel, ",")
+			if len(servicePortLabelArray) > 0 {
 				registerPorts = make(map[int]struct{}, 0)
-				for _, pv := range ps {
+				for _, pv := range servicePortLabelArray {
 					pv = strings.TrimSpace(pv)
 					pi, err := strconv.Atoi(pv)
 					if err == nil {
@@ -138,30 +136,30 @@ func (m *Mesos) registerTask(t *state.Task, agent string) {
 		}
 	}
 
-	l := t.Label("tags")
-	if l != "" {
-		tags = strings.Split(t.Label("tags"), ",")
+	taskLabel := task.Label("tags")
+	if taskLabel != "" {
+		tags = strings.Split(task.Label("tags"), ",")
 	} else {
 		tags = []string{}
 	}
 
-	tags = buildRegisterTaskTags(tname, tags, m.taskTag)
+	tags = buildRegisterTaskTags(taskName, tags, mesos.taskTag)
 
-	for key := range t.DiscoveryInfo.Ports.DiscoveryPorts {
+	for key := range task.DiscoveryInfo.Ports.DiscoveryPorts {
 		// We append -portN to ports after the first.
 		// This is done to preserve compatibility with
 		// existing implementations which may rely on the
 		// old unprefixed name.
-		svcName := tname
+		svcName := taskName
 		if key > 0 {
 			svcName = fmt.Sprintf("%s-port%d", svcName, key+1)
 		}
 		var porttags []string
-		discoveryPort := state.DiscoveryPort(t.DiscoveryInfo.Ports.DiscoveryPorts[key])
+		discoveryPort := state.DiscoveryPort(task.DiscoveryInfo.Ports.DiscoveryPorts[key])
 		serviceName := discoveryPort.Name
 		servicePort := strconv.Itoa(discoveryPort.Number)
 		log.Debugf("%+v framework has %+v as a name for %+v port",
-			t.Name,
+			task.Name,
 			discoveryPort.Name,
 			discoveryPort.Number)
 		pl := discoveryPort.Label("tags")
@@ -171,13 +169,13 @@ func (m *Mesos) registerTask(t *state.Task, agent string) {
 			porttags = []string{}
 		}
 		if discoveryPort.Name != "" {
-			m.Registry.Register(&registry.Service{
-				ID:      fmt.Sprintf("%s:%s:%s:%s:%d", m.ServiceIdPrefix, agent, tname, address, discoveryPort.Number),
-				Name:    tname,
+			mesos.Registry.Register(&registry.Service{
+				ID:      fmt.Sprintf("%s:%s:%s:%s:%s:%d", mesos.ServiceIdPrefix, agent, taskName, address, discoveryPort.Name, discoveryPort.Number),
+				Name:    taskName,
 				Port:    toPort(servicePort),
 				Address: address,
 				Tags:    append(append(tags, serviceName), porttags...),
-				Check: GetCheck(t, &CheckVar{
+				Check: GetCheck(task, &CheckVar{
 					Host: toIP(address),
 					Port: servicePort,
 				}),
@@ -187,8 +185,9 @@ func (m *Mesos) registerTask(t *state.Task, agent string) {
 		}
 	}
 
-	if t.Resources.PortRanges != "" {
-		for key, port := range t.Resources.Ports() {
+
+	if task.Resources.PortRanges != "" {
+		for key, port := range task.Resources.Ports() {
 			// do not register port if explicit port label was found
 			if _, ok := registerPorts[key]; len(registerPorts) > 0 && !ok {
 				continue
@@ -198,17 +197,24 @@ func (m *Mesos) registerTask(t *state.Task, agent string) {
 			// This is done to preserve compatibility with
 			// existing implementations which may rely on the
 			// old unprefixed name.
-			svcName := tname
+			svcName := taskName
 			if key > 0 {
 				svcName = fmt.Sprintf("%s-port%d", svcName, key+1)
 			}
-			m.Registry.Register(&registry.Service{
-				ID:      fmt.Sprintf("%s:%s:%s:%s:%s", m.ServiceIdPrefix, agent, tname, address, port),
-				Name:    tname,
+
+			log.Debugf("%+v framework has %+v as a name for %+v port",
+				task.Name,
+				svcName,
+				port)
+
+
+			mesos.Registry.Register(&registry.Service{
+				ID:      fmt.Sprintf("%s:%s:%s:%s:%s", mesos.ServiceIdPrefix, agent, taskName, address, svcName, port),
+				Name:    taskName,
 				Port:    toPort(port),
 				Address: address,
 				Tags:    tags,
-				Check: GetCheck(t, &CheckVar{
+				Check: GetCheck(task, &CheckVar{
 					Host: toIP(address),
 					Port: port,
 				}),
@@ -219,12 +225,12 @@ func (m *Mesos) registerTask(t *state.Task, agent string) {
 	}
 
 	if !registered {
-		m.Registry.Register(&registry.Service{
-			ID:      fmt.Sprintf("%s:%s-%s:%s", m.ServiceIdPrefix, agent, tname, address),
-			Name:    tname,
+		mesos.Registry.Register(&registry.Service{
+			ID:      fmt.Sprintf("%s:%s-%s:%s", mesos.ServiceIdPrefix, agent, taskName, address),
+			Name:    taskName,
 			Address: address,
 			Tags:    tags,
-			Check: GetCheck(t, &CheckVar{
+			Check: GetCheck(task, &CheckVar{
 				Host: toIP(address),
 			}),
 			Agent: toIP(agent),
@@ -252,14 +258,14 @@ func buildRegisterTaskTags(taskName string, startingTags []string, taskTag map[s
 	return result
 }
 
-func (m *Mesos) agentTags(ts ...string) []string {
-	if len(m.ServiceTags) == 0 {
+func (mesos *Mesos) agentTags(ts ...string) []string {
+	if len(mesos.ServiceTags) == 0 {
 		return ts
 	}
 
 	rval := []string{}
 
-	for _, tag := range m.ServiceTags {
+	for _, tag := range mesos.ServiceTags {
 		for _, t := range ts {
 			rval = append(rval, fmt.Sprintf("%s.%s", t, tag))
 		}

@@ -16,6 +16,7 @@ type Service struct {
 	Tags    []string
 	Check   *Check
 	Agent   string
+	//MESOSID string
 }
 
 type Registry interface {

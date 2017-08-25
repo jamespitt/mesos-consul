@@ -19,19 +19,19 @@ const Name = "mesos-consul"
 const Version = "0.4.0"
 
 func main() {
-	c, err := parseFlags(os.Args[1:])
+	config, err := parseFlags(os.Args[1:])
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if c.Healthcheck {
-		go StartHealthcheckService(c)
+	if config.Healthcheck {
+		go StartHealthcheckService(config)
 	}
 
-	log.Info("Using zookeeper: ", c.Zk)
-	leader := mesos.New(c)
+	log.Info("Using zookeeper: ", config.Zk)
+	leader := mesos.New(config)
 
-	ticker := time.NewTicker(c.Refresh)
+	ticker := time.NewTicker(config.Refresh)
 	leader.Refresh()
 	for _ = range ticker.C {
 		leader.Refresh()

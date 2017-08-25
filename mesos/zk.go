@@ -12,23 +12,23 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (m *Mesos) OnMasterChanged(leader *proto.MasterInfo) {
-	m.Lock.Lock()
-	defer m.Lock.Unlock()
+func (mesos *Mesos) OnMasterChanged(leader *proto.MasterInfo) {
+	mesos.Lock.Lock()
+	defer mesos.Lock.Unlock()
 
-	m.started.Do(func() { close(m.startChan) })
+	mesos.started.Do(func() { close(mesos.startChan) })
 
-	m.Leader = leader
+	mesos.Leader = leader
 }
 
-func (m *Mesos) UpdatedMasters(masters []*proto.MasterInfo) {
-	m.Lock.Lock()
-	defer m.Lock.Unlock()
+func (mesos *Mesos) UpdatedMasters(masters []*proto.MasterInfo) {
+	mesos.Lock.Lock()
+	defer mesos.Lock.Unlock()
 
-	m.Masters = masters
+	mesos.Masters = masters
 }
 
-func (m *Mesos) zkDetector(zkURI string) {
+func (mesos *Mesos) zkDetector(zkURI string) {
 	if zkURI == "" {
 		log.Fatal("Zookeeper address not provided")
 	}
@@ -39,11 +39,11 @@ func (m *Mesos) zkDetector(zkURI string) {
 		log.Fatal(err.Error())
 	}
 
-	m.startChan = make(chan struct{})
-	md.Detect(m)
+	mesos.startChan = make(chan struct{})
+	md.Detect(mesos)
 
 	select {
-	case <-m.startChan:
+	case <-mesos.startChan:
 		log.Info("Done waiting for initial leader information from Zookeeper.")
 	case <-time.After(2 * time.Minute):
 		log.Fatal("Timed out waiting for initial ZK detection.")
@@ -52,21 +52,21 @@ func (m *Mesos) zkDetector(zkURI string) {
 
 // Get the leader out of the list of masters
 //
-func (m *Mesos) getLeader() *MesosHost {
-	m.Lock.Lock()
-	defer m.Lock.Unlock()
+func (mesos *Mesos) getLeader() *MesosHost {
+	mesos.Lock.Lock()
+	defer mesos.Lock.Unlock()
 
-	return MasterInfoToMesosHost(m.Leader)
+	return MasterInfoToMesosHost(mesos.Leader)
 }
 
-func (m *Mesos) getMasters() []*MesosHost {
-	m.Lock.Lock()
-	defer m.Lock.Unlock()
+func (mesos *Mesos) getMasters() []*MesosHost {
+	mesos.Lock.Lock()
+	defer mesos.Lock.Unlock()
 
-	ms := make([]*MesosHost, len(m.Masters))
-	for i, msp := range m.Masters {
+	ms := make([]*MesosHost, len(mesos.Masters))
+	for i, msp := range mesos.Masters {
 		mh := MasterInfoToMesosHost(msp)
-		if *m.Leader.Id == *msp.Id {
+		if *mesos.Leader.Id == *msp.Id {
 			mh.IsLeader = true
 		}
 
