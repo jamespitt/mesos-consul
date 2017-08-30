@@ -82,9 +82,9 @@ func (mesos *Mesos) registerHost(s *registry.Service) {
 	if h != nil {
 		if (h.ID == s.ID) {
 		  if sliceEq(s.Tags, h.Tags) {
-			mesos.Registry.CacheMark(s.ID)
-			// Tags are the same. Return
-			return
+        mesos.Registry.CacheMark(s.ID)
+        // Tags are the same. Return
+        return
 		  }
 		}
 
