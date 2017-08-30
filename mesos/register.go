@@ -104,6 +104,8 @@ func (mesos *Mesos) registerTask(task *state.Task, agent string) {
 	var IDs map[string]string
   var id string
 
+  IDs = make(map[string]string)
+
 	registered := false
 
 	taskName := cleanName(task.Name, mesos.Separator)
