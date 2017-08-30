@@ -199,9 +199,11 @@ func (mesos *Mesos) parseState(state state.State) {
 
 	for _, framework:= range state.Frameworks {
 		if !mesos.FwPrivilege.Allowed(framework.Name) {
+      log.Debugf("not allowed with framework : (%v)", framework.Name)
 			continue
 		}
 		for _, task := range framework.Tasks {
+      log.Debugf("original TaskName (prereg...) : (%v)", task.Name)
 			agent, ok := mesos.Agents[task.SlaveID]
 			if ok && task.State == "TASK_RUNNING" {
 				task.SlaveIP = agent

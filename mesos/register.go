@@ -175,6 +175,7 @@ func (mesos *Mesos) registerTask(task *state.Task, agent string) {
 		if discoveryPort.Name != "" {
 			id = fmt.Sprintf("%s:%s:%s:%s:%d", mesos.ServiceIdPrefix, agent, taskName, address, discoveryPort.Number)
       IDs[id] = "set"
+      log.Debugf("ID = %+v with name =  %+v ",id, discoveryPort.Name )
 
 			mesos.Registry.Register(&registry.Service{
 				ID:      fmt.Sprintf("%s:%s:%s:%s:%s:%d", mesos.ServiceIdPrefix, agent, taskName, address, discoveryPort.Name, discoveryPort.Number),
@@ -201,9 +202,10 @@ func (mesos *Mesos) registerTask(task *state.Task, agent string) {
 			}
 
       // We use this as a check to see if we've already got this setup...
-			id = fmt.Sprintf("%s:%s:%s:%s:%d", mesos.ServiceIdPrefix, agent, taskName, address, port)
+			id = fmt.Sprintf("%s:%s:%s:%s:%s", mesos.ServiceIdPrefix, agent, taskName, address, port)
+      log.Debugf("ID = %+v withoutname, in range ",id)
       if  _, ok := IDs[id]; ok  {
-        log.Debugf("%+v already has %+v port",
+        log.Debugf("%+v already has %+v port - leaving",
           taskName,
           port)
 				continue
@@ -224,8 +226,8 @@ func (mesos *Mesos) registerTask(task *state.Task, agent string) {
 				port)
 
 
-			mesos.Registry.Register(&registry.Service{
-        ID:      fmt.Sprintf("%s:%s:%s:%s:%s:%d", mesos.ServiceIdPrefix, agent, taskName, address, svcName, port),
+      mesos.Registry.Register(&registry.Service{
+        ID:      fmt.Sprintf("%s:%s:%s:%s:%s:%s", mesos.ServiceIdPrefix, agent, taskName, address, svcName, port),
 				Name:    taskName,
 				Port:    toPort(port),
 				Address: address,
