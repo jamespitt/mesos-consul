@@ -101,6 +101,8 @@ func (mesos *Mesos) registerHost(s *registry.Service) {
 
 func (mesos *Mesos) registerTask(task *state.Task, agent string) {
 	var tags []string
+	var IDs map[string]string
+  var id string
 
 	registered := false
 
@@ -169,6 +171,9 @@ func (mesos *Mesos) registerTask(task *state.Task, agent string) {
 			porttags = []string{}
 		}
 		if discoveryPort.Name != "" {
+			id = fmt.Sprintf("%s:%s:%s:%s:%d", mesos.ServiceIdPrefix, agent, taskName, address, discoveryPort.Number)
+      IDs[id] = "set"
+
 			mesos.Registry.Register(&registry.Service{
 				ID:      fmt.Sprintf("%s:%s:%s:%s:%s:%d", mesos.ServiceIdPrefix, agent, taskName, address, discoveryPort.Name, discoveryPort.Number),
 				Name:    taskName,
@@ -193,6 +198,15 @@ func (mesos *Mesos) registerTask(task *state.Task, agent string) {
 				continue
 			}
 
+      // We use this as a check to see if we've already got this setup...
+			id = fmt.Sprintf("%s:%s:%s:%s:%d", mesos.ServiceIdPrefix, agent, taskName, address, port)
+      if  _, ok := IDs[id]; ok  {
+        log.Debugf("%+v already has %+v port",
+          taskName,
+          port)
+				continue
+			}
+
 			// We append -portN to ports after the first.
 			// This is done to preserve compatibility with
 			// existing implementations which may rely on the
@@ -209,7 +223,7 @@ func (mesos *Mesos) registerTask(task *state.Task, agent string) {
 
 
 			mesos.Registry.Register(&registry.Service{
-				ID:      fmt.Sprintf("%s:%s:%s:%s:%s", mesos.ServiceIdPrefix, agent, taskName, address, svcName, port),
+        ID:      fmt.Sprintf("%s:%s:%s:%s:%s:%d", mesos.ServiceIdPrefix, agent, taskName, address, svcName, port),
 				Name:    taskName,
 				Port:    toPort(port),
 				Address: address,
