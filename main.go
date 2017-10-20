@@ -40,8 +40,9 @@ func main() {
 	a := 0
 	for _ = range ticker.C {
 		leader.Refresh()
-		if (a>10) {
+		if (a>180) {
 			a = 0;
+		  // Clear out all the settings and cache...
 			leader = mesos.New(config)
 			leader.Registry.CacheWipe()
 		}
