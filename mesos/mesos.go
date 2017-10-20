@@ -126,6 +126,7 @@ func (mesos *Mesos) Refresh() error {
 	}
 
 	if mesos.Registry.CacheCreate() {
+		log.Info("Load cache... ")
 		mesos.LoadCache()
 	}
 

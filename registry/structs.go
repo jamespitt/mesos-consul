@@ -21,6 +21,7 @@ type Service struct {
 
 type Registry interface {
 	CacheCreate() bool
+	CacheWipe() bool
 	CacheDelete(string)
 	CacheLoad(string, string) error
 	CacheLookup(string) *Service

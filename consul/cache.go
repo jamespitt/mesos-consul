@@ -39,6 +39,12 @@ func (c *Consul) CacheCreate() bool {
 	return false
 }
 
+// CacheWipe()
+//
+func (c *Consul) CacheWipe() bool {
+	serviceCache = nil
+	return true
+}
 // Initialize the service cache
 //
 func (c *Consul) CacheLoad(host, serviceIdPrefix string) error {

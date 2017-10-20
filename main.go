@@ -31,10 +31,21 @@ func main() {
 	log.Info("Using zookeeper: ", config.Zk)
 	leader := mesos.New(config)
 
+	// Refresh rate from command line
 	ticker := time.NewTicker(config.Refresh)
+
+
+	//Refresh data from mesos leader...
 	leader.Refresh()
+	a := 0
 	for _ = range ticker.C {
 		leader.Refresh()
+		if (a>10) {
+			a = 0;
+			leader = mesos.New(config)
+			leader.Registry.CacheWipe()
+		}
+		a++
 	}
 }
 
