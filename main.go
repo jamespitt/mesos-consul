@@ -45,8 +45,8 @@ func main() {
 		  // Clear out all the settings and cache...
 			leader = mesos.New(config)
 			leader.Registry.CacheWipe()
+      os.Exit(3)
 		}
-    os.Exit(3)
 	}
 }
 
