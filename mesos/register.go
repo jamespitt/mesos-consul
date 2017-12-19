@@ -120,6 +120,7 @@ func (mesos *Mesos) registerTask(task *state.Task, agent string) {
 	}
 
 	address := task.IP(mesos.IpOrder...)
+  fmt.Printf("%+v\n", task)
 
 	// build a map to indicate public ports
 	var registerPorts map[int]struct{}

@@ -46,7 +46,7 @@ func main() {
 			leader = mesos.New(config)
 			leader.Registry.CacheWipe()
 		}
-		a++
+    os.Exit(3)
 	}
 }
 

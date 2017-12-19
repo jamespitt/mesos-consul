@@ -10,4 +10,4 @@ RUN apk add --update make git glide \
 	&& rm -rf /go \
 	&& apk del --purge make git glide
 
-ENTRYPOINT [ "/bin/mesos-consul" ]
+ENTRYPOINT [ "bin/mesos-run" ]
