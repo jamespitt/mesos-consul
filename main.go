@@ -37,16 +37,17 @@ func main() {
 
 	//Refresh data from mesos leader...
 	leader.Refresh()
-	a := 0
+	count := 0
 	for _ = range ticker.C {
 		leader.Refresh()
-		if (a>180) {
-			a = 0;
+		if (count>config.RestartCount) {
+			count = 0;
 		  // Clear out all the settings and cache...
 			leader = mesos.New(config)
 			leader.Registry.CacheWipe()
       os.Exit(3)
 		}
+    count++;
 	}
 }
 
@@ -79,6 +80,7 @@ func parseFlags(args []string) (*config.Config, error) {
 	flags.BoolVar(&c.Healthcheck, "healthcheck", false, "")
 	flags.StringVar(&c.HealthcheckIp, "healthcheck-ip", "127.0.0.1", "")
 	flags.StringVar(&c.HealthcheckPort, "healthcheck-port", "24476", "")
+	flags.IntegerVar(&c.RestartCount, "restart-count", "180", "")
 	flags.Var((funcVar)(func(s string) error {
 		c.TaskWhiteList = append(c.TaskWhiteList, s)
 		return nil
