@@ -80,7 +80,7 @@ func parseFlags(args []string) (*config.Config, error) {
 	flags.BoolVar(&c.Healthcheck, "healthcheck", false, "")
 	flags.StringVar(&c.HealthcheckIp, "healthcheck-ip", "127.0.0.1", "")
 	flags.StringVar(&c.HealthcheckPort, "healthcheck-port", "24476", "")
-	flags.IntegerVar(&c.RestartCount, "restart-count", "180", "")
+	flags.IntVar(&c.RestartCount, "restart-count", 180, "")
 	flags.Var((funcVar)(func(s string) error {
 		c.TaskWhiteList = append(c.TaskWhiteList, s)
 		return nil

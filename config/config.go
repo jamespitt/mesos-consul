@@ -18,6 +18,7 @@ type Config struct {
 	FwBlackList     []string
 	TaskTag         []string
 	Separator       string
+  RestartCount    int
 
 	// Mesos service name and tags
 	ServiceName      string
@@ -44,5 +45,6 @@ func DefaultConfig() *Config {
 		ServiceTags:      "",
 		ServiceIdPrefix:  "mesos-consul",
 		ServicePortLabel: "",
+    RestartCount:    180,
 	}
 }
