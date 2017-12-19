@@ -1,6 +1,6 @@
 #!/bin/sh
 
 while true ; do 
-  /bin/mesos-consul
+  /bin/mesos-consul $@
   echo "restarting"
 done
